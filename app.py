@@ -6,7 +6,10 @@ import pandas as pd
 import pickle
 
 ##Load the trained model
-model = tf.keras.models.load_model('model.h5')
+# model = tf.keras.models.load_model('model.h5')
+
+#Load trained model for Streamlit cloud
+model = tf.keras.models.load_model("model_tf_cloud")
 
 ##Load the encoders and scalers
 with open('label_encode_gender.pkl', 'rb') as file:
@@ -23,6 +26,7 @@ with open('scaler.pkl', 'rb') as file:
 st.title("Customer Churn Prediction")
 
 ##User input
+#with st.form("user_input_form"):
 geography = st.selectbox('Geography', onehot_encoder_geo.categories_[0])
 gender = st.selectbox('Gender', label_encoder_gender.classes_)
 age = st.slider('Age', 18,90)
@@ -33,38 +37,44 @@ tenure = st.slider('Tenure',0,10)
 num_of_products = st.slider("Number of Products", 1, 4)
 has_cr_card = st.selectbox('Has Credit Card',[0,1])
 is_active_member = st.selectbox('Is Active Member', [0,1])
+    #submit = st.form_submit_button("Predict Churn")
 
 ##Prepare the input data
+#if submit:
 input_data = pd.DataFrame({
-    'CreditScore': [credit_score],
-    'Gender': [label_encoder_gender.transform([gender])[0]],
-    'Age': [age],
-    'Tenure': [tenure],
-    'Balance': [balance],
-    'NumofProduct': [num_of_products],
-    'HasCrCredit': [has_cr_card],
-    'IsActiveMember': [is_active_member],
-    'EstimatedSalary': [estimated_salary]
-})
+        'CreditScore': [credit_score],
+        'Gender': [label_encoder_gender.transform([gender])[0]],
+        'Age': [age],
+        'Tenure': [tenure],
+        'Balance': [balance],
+        'NumofProduct': [num_of_products],
+        'HasCrCredit': [has_cr_card],
+        'IsActiveMember': [is_active_member],
+        'EstimatedSalary': [estimated_salary]
+    })
 
-##One-hot encode 'Geography'
-geo_encoded = onehot_encoder_geo.transform([[geography]]).toarray()
-geo_encoded_df = pd.DataFrame(geo_encoded,columns=onehot_encoder_geo.get_feature_names_out(['Geography']))
+# --- Predict only when button is clicked ---
+if st.button("Predict Churn"):
 
-##Combine one-hot encoded column with input data
-input_data = pd.concat([input_data.reset_index(drop=True), geo_encoded_df], axis=1)
+    ##One-hot encode 'Geography'
+    geo_encoded = onehot_encoder_geo.transform([[geography]]).toarray()
+    geo_encoded_df = pd.DataFrame(geo_encoded,columns=onehot_encoder_geo.get_feature_names_out(['Geography']))
 
-##Scaling the input data
-input_data_scaled = scaler.transform(input_data)
+    ##Combine one-hot encoded column with input data
+    input_data = pd.concat([input_data.reset_index(drop=True), geo_encoded_df], axis=1)
 
-#Predict churn
-prediction = model.predict(input_data_scaled)
-prediction_prob = prediction[0][0]
+    ##Scaling the input data
+    input_data_scaled = scaler.transform(input_data)
 
-##Prediction churn 
-if prediction_prob > 0.5:
-    st.write("Customer will surely churn")
-else: 
-    st.write("Customer will not churn")
+    #Predict
+    prediction = model.predict(input_data_scaled)
+    prediction_prob = prediction[0][0]
+
+    ##Show Prediction
+    if prediction_prob > 0.5:
+         st.markdown(f"<p style='color:red; font-size:20px;'>Customer will surely churn ({prediction_prob:.2%})</p>", unsafe_allow_html=True)
+    else: 
+          st.markdown(f"<p style='color:green; font-size:20px;'>Customer will not churn ({prediction_prob:.2%})</p>", unsafe_allow_html=True)
+
 
 
