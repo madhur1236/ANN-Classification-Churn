@@ -9,7 +9,7 @@ import pickle
 # model = tf.keras.models.load_model('model.h5')
 
 #Load trained model for Streamlit cloud
-model = tf.keras.models.load_model("model_tf_cloud", compile=False)
+model = tf.keras.models.load_model("model.keras", compile=False)
 
 ##Load the encoders and scalers
 with open('label_encode_gender.pkl', 'rb') as file:
